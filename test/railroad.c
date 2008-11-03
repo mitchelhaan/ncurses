@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2000-2005,2006 Free Software Foundation, Inc.              *
+ * Copyright (c) 2000-2007,2008 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -29,10 +29,11 @@
 /*
  * Author: Thomas E. Dickey - 2000
  *
- * $Id: railroad.c,v 1.14 2006/05/20 16:02:04 tom Exp $
+ * $Id: railroad.c,v 1.16 2008/02/09 18:08:43 tom Exp $
  *
  * A simple demo of the termcap interface.
  */
+#define USE_TINFO
 #include <test.priv.h>
 
 #if HAVE_TGETENT
@@ -55,7 +56,7 @@ static char *backup;
 static bool interrupted = FALSE;
 
 static int
-outc(int c)
+outc(TPUTS_ARG c)
 {
     if (interrupted) {
 	char tmp = c;

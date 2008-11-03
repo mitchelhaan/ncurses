@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1998-2005,2006 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998-2007,2008 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -30,16 +30,8 @@
  *
  * Generate timing statistics for vertical-motion optimization.
  *
- * $Id: hashtest.c,v 1.26 2006/05/20 16:02:16 tom Exp $
+ * $Id: hashtest.c,v 1.29 2008/08/16 17:26:44 tom Exp $
  */
-
-#ifdef TRACE
-#define Trace(p) _tracef p
-#define USE_TRACE 1
-#else
-#define Trace(p)		/* nothing */
-#define USE_TRACE 0
-#endif
 
 #include <test.priv.h>
 
@@ -190,7 +182,7 @@ main(int argc, char *argv[])
 
     setlocale(LC_ALL, "");
 
-    while ((c = getopt(argc, argv, "cf:h:l:norsx")) != EOF) {
+    while ((c = getopt(argc, argv, "cf:h:l:norsx")) != -1) {
 	switch (c) {
 	case 'c':
 	    continuous = TRUE;
@@ -203,6 +195,7 @@ main(int argc, char *argv[])
 	    break;
 	case 'l':
 	    test_loops = atoi(optarg);
+	    assert(test_loops >= 0);
 	    break;
 	case 'n':
 	    test_normal = TRUE;

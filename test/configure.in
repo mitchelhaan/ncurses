@@ -1,5 +1,5 @@
 dnl***************************************************************************
-dnl Copyright (c) 1998-2004,2005 Free Software Foundation, Inc.              *
+dnl Copyright (c) 1998-2007,2008 Free Software Foundation, Inc.              *
 dnl                                                                          *
 dnl Permission is hereby granted, free of charge, to any person obtaining a  *
 dnl copy of this software and associated documentation files (the            *
@@ -28,7 +28,7 @@ dnl***************************************************************************
 dnl
 dnl Author: Thomas E. Dickey 1996, etc.
 dnl
-dnl $Id: configure.in,v 1.58 2006/07/15 18:54:07 tom Exp $
+dnl $Id: configure.in,v 1.67 2008/09/06 22:10:23 tom Exp $
 dnl This is a simple configuration-script for the ncurses test programs that
 dnl allows the test-directory to be separately configured against a reference
 dnl system (i.e., sysvr4 curses)
@@ -52,28 +52,30 @@ AC_PROG_CPP
 AC_PROG_AWK
 
 dnl Things that we don't need (or must override) if we're not building ncurses
-CC_G_OPT="-g"				AC_SUBST(CC_G_OPT)
+CC_G_OPT="-g"					AC_SUBST(CC_G_OPT)
 CC_SHARED_OPTS=unknown			AC_SUBST(CC_SHARED_OPTS)
 CPPFLAGS="$CPPFLAGS"			AC_SUBST(CPPFLAGS)
-DFT_DEP_SUFFIX=""			AC_SUBST(DFT_DEP_SUFFIX)
+DFT_DEP_SUFFIX=""				AC_SUBST(DFT_DEP_SUFFIX)
 DFT_OBJ_SUBDIR=`pwd|sed -e's:.*/::'`	AC_SUBST(DFT_OBJ_SUBDIR)
 DFT_UPR_MODEL="NORMAL"			AC_SUBST(DFT_UPR_MODEL)
-ECHO_LINK='@ echo linking $@ ... ;'	AC_SUBST(ECHO_LINK)
-LD="ld"					AC_SUBST(LD)
-LDFLAGS_SHARED=""			AC_SUBST(LDFLAGS_SHARED)
-LD_MODEL=""				AC_SUBST(LD_MODEL)
-LD_SHARED_OPTS=""			AC_SUBST(LD_SHARED_OPTS)
-LIBTOOL=""				AC_SUBST(LIBTOOL)
-LIB_CLEAN=""				AC_SUBST(LIB_CLEAN)
-LIB_COMPILE=""				AC_SUBST(LIB_COMPILE)
-LIB_LINK=""				AC_SUBST(LIB_LINK)
-LINK_TESTS=""				AC_SUBST(LINK_TESTS)
-LINT=lint				AC_SUBST(LINT)
-LINT_OPTS=""				AC_SUBST(LINT_OPTS)
-LOCAL_LDFLAGS=""			AC_SUBST(LOCAL_LDFLAGS)
-MATH_LIB="-lm"				AC_SUBST(MATH_LIB)
-TEST_ARGS=""				AC_SUBST(TEST_ARGS)
-TEST_DEPS=""				AC_SUBST(TEST_DEPS)
+LD="ld"							AC_SUBST(LD)
+LDFLAGS_SHARED=""				AC_SUBST(LDFLAGS_SHARED)
+LDFLAGS_STATIC=""				AC_SUBST(LDFLAGS_STATIC)
+LD_MODEL=""						AC_SUBST(LD_MODEL)
+LD_SHARED_OPTS=""				AC_SUBST(LD_SHARED_OPTS)
+LIBTOOL=""						AC_SUBST(LIBTOOL)
+LIB_CLEAN=""					AC_SUBST(LIB_CLEAN)
+LIB_COMPILE=""					AC_SUBST(LIB_COMPILE)
+LIB_LINK='${CC}'				AC_SUBST(LIB_LINK)
+LINK_TESTS=""					AC_SUBST(LINK_TESTS)
+LINT=lint						AC_SUBST(LINT)
+LINT_OPTS=""					AC_SUBST(LINT_OPTS)
+LOCAL_LDFLAGS=""				AC_SUBST(LOCAL_LDFLAGS)
+MATH_LIB="-lm"					AC_SUBST(MATH_LIB)
+PTHREAD="-lm"					AC_SUBST(PTHREAD)
+TEST_ARGS=""					AC_SUBST(TEST_ARGS)
+TEST_DEPS=""					AC_SUBST(TEST_DEPS)
+TEST_LIBS=""					AC_SUBST(TEST_LIBS)
 TINFO_ARGS='$(LIBS_CURSES)'		AC_SUBST(TINFO_ARGS)
 cf_cv_abi_version=""			AC_SUBST(cf_cv_abi_version)
 cf_cv_rel_version=""			AC_SUBST(cf_cv_rel_version)
@@ -85,9 +87,13 @@ AC_EXEEXT
 AC_OBJEXT
 
 CF_ANSI_CC_REQD
-CF_ENABLE_WARNINGS
 CF_GCC_ATTRIBUTES
 CF_XOPEN_SOURCE
+AC_C_CONST
+CF_SIG_ATOMIC_T
+
+CF_DISABLE_ECHO
+CF_ENABLE_WARNINGS
 
 CF_WITH_CURSES_DIR
 
@@ -174,6 +180,19 @@ unistd.h \
 )
 
 AC_CHECK_FUNCS( \
+gettimeofday \
+mblen \
+mbrlen \
+mbrtowc \
+mbsrtowcs \
+mbstowcs \
+mbtowc \
+strdup \
+wcsrtombs \
+wcstombs \
+)
+
+CF_CURSES_FUNCS( \
 chgat \
 color_set \
 filter \
@@ -181,7 +200,7 @@ getbegx \
 getcurx \
 getmaxx \
 getnstr \
-gettimeofday \
+getparx \
 getwin \
 mvvline \
 mvwvline \
@@ -193,7 +212,6 @@ ripoffline \
 setupterm \
 slk_color \
 slk_init \
-strdup \
 termattrs \
 tgetent \
 tigetnum \
@@ -206,6 +224,7 @@ winsstr \
 wresize \
 )
 
+AC_CACHE_CHECK(for ncurses extended functions,cf_cv_ncurses_ext_funcs,[
 AC_TRY_LINK([
 #include <${cf_cv_ncurses_header-curses.h}>],
 [
@@ -220,8 +239,28 @@ AC_TRY_LINK([
 	(void) resizeterm (0, 0);
 	(void) use_default_colors ();
 	(void) use_extended_names (0);
-	(void) wresize (0, 0, 0);
-	],[AC_DEFINE(NCURSES_EXT_FUNCS)])
+	(void) wresize (0, 0, 0);],
+	[cf_cv_ncurses_ext_funcs=yes],
+	[cf_cv_ncurses_ext_funcs=no])
+])
+test "$cf_cv_ncurses_ext_funcs" != no && AC_DEFINE(NCURSES_EXT_FUNCS)
+
+AC_CACHE_CHECK(for wide-character functions,cf_cv_widechar_funcs,[
+AC_TRY_LINK([
+#include <${cf_cv_ncurses_header-curses.h}>],
+[
+	static wchar_t src_wchar[2];
+	static cchar_t dst_cchar;
+	setcchar(&dst_cchar, src_wchar, A_NORMAL, 0, (void *) 0);
+	],
+	[cf_cv_widechar_funcs=yes],
+	[cf_cv_widechar_funcs=no])
+])
+if test "$cf_cv_widechar_funcs" != no ; then
+	AC_DEFINE(USE_WIDEC_SUPPORT,1)
+else
+	AC_DEFINE(USE_WIDEC_SUPPORT,0)
+fi
 
 CF_SYS_TIME_SELECT
 CF_FUNC_CURSES_VERSION
@@ -236,7 +275,7 @@ LIBS=
 dnl ---------------------------------------------------------------------------
 
 AC_OUTPUT(Makefile,[
-CF_PRG_RULES([$srcdir/mk-test.awk ECHO_LINK="$ECHO_LINK"], .)
+CF_PRG_RULES([$srcdir/mk-test.awk ECHO_LINK="$ECHO_LD"], .)
 	cat >>Makefile <<TEST_EOF
 
 # These rules are generated so we do not rely on suffix rules, which do not
@@ -256,4 +295,5 @@ TEST_EOF
 done
 ],[
 AWK="$AWK"
+ECHO_LD="$ECHO_LD"
 ],cat)

@@ -2,7 +2,7 @@
  *  newdemo.c	-	A demo program using PDCurses. The program illustrate
  *  	 		the use of colours for text output.
  *
- * $Id: newdemo.c,v 1.29 2006/12/03 00:15:28 tom Exp $
+ * $Id: newdemo.c,v 1.31 2008/08/03 20:19:38 tom Exp $
  */
 
 #include <test.priv.h>
@@ -12,7 +12,7 @@
 /*
  *  The Australian map
  */
-static const char *AusMap[16] =
+static CONST_MENUS char *AusMap[16] =
 {
     "           A           A ",
     "    N.T. AAAAA       AAAA ",
@@ -319,6 +319,7 @@ main(int argc GCC_UNUSED, char *argv[]GCC_UNUSED)
 	j = 0;
 	/*  Draw running As across in RED */
 	set_colors(win, 7, COLOR_RED, COLOR_GREEN);
+	memset(save, ' ', sizeof(save));
 	for (i = 2; i < width - 4; ++i) {
 	    k = mvwinch(win, 4, i);
 	    if (k == ERR)

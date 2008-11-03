@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1998-2005,2006 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998-2007,2008 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -29,7 +29,7 @@
 /****************************************************************************
  *  Author: Thomas E. Dickey                    1996-on                     *
  ****************************************************************************/
-/* $Id: test.priv.h,v 1.63 2006/07/15 18:27:24 tom Exp $ */
+/* $Id: test.priv.h,v 1.79 2008/10/04 21:53:41 tom Exp $ */
 
 #ifndef __TEST_PRIV_H
 #define __TEST_PRIV_H 1
@@ -59,6 +59,14 @@
 #define HAVE_CURSES_VERSION 0
 #endif
 
+#ifndef HAVE_CHGAT
+#define HAVE_CHGAT 0
+#endif
+
+#ifndef HAVE_COLOR_SET
+#define HAVE_COLOR_SET 0
+#endif
+
 #ifndef HAVE_FILTER
 #define HAVE_FILTER 0
 #endif
@@ -81,6 +89,10 @@
 
 #ifndef HAVE_GETOPT_H
 #define HAVE_GETOPT_H 0
+#endif
+
+#ifndef HAVE_GETPARX
+#define HAVE_GETPARX 0
 #endif
 
 #ifndef HAVE_GETWIN
@@ -235,9 +247,18 @@
 #include <term.h>
 #endif
 
-#ifdef NCURSES_VERSION
-#define HAVE_COLOR_SET 1
-#define HAVE_CHGAT 1
+/*
+ * Not all curses.h implementations include unctrl.h,
+ * Solaris 10 xpg4 for example.
+ */
+#if defined(NCURSES_VERSION) || defined(_XOPEN_CURSES)
+#if defined(HAVE_NCURSESW_NCURSES_H)
+#include <ncursesw/unctrl.h>
+#elif defined(HAVE_NCURSES_NCURSES_H)
+#include <ncurses/unctrl.h>
+#else
+#include <unctrl.h>
+#endif
 #endif
 
 #if HAVE_GETOPT_H
@@ -308,8 +329,8 @@ extern int optind;
 #endif
 
 #ifndef HAVE_TYPE_ATTR_T
-#if !USE_WIDEC_SUPPORT
-#define attr_t long
+#if !USE_WIDEC_SUPPORT && !defined(attr_t)
+#define attr_t chtype
 #endif
 #endif
 
@@ -320,13 +341,16 @@ extern int optind;
 #define NCURSES_CH_T cchar_t
 #endif
 
+#ifndef NCURSES_OPAQUE
+#define NCURSES_OPAQUE 0
+#endif
+
 #ifndef CCHARW_MAX
 #define CCHARW_MAX 5
 #endif
 
-#ifndef CTRL
-#define CTRL(x)		((x) & 0x1f)
-#endif
+#undef CTRL
+#define CTRL(x)	((x) & 0x1f)
 
 #define QUIT		CTRL('Q')
 #define ESCAPE		CTRL('[')
@@ -367,6 +391,21 @@ extern int optind;
 #define getmaxy(win)            ((win)?((win)->_maxy + 1):ERR)
 #endif
 
+/*
+ * Solaris 10 xpg4:
+#define	__m_getparx(w)		((w)->_parent == (WINDOW *) 0 ? -1 \
+				: (w)->_begx - (w)->_parent->_begx)
+ */
+#if !defined(getparx) && !HAVE_GETPARX
+#ifdef __m_getparx
+#define getparx(win)            __m_getparx(win)
+#define getpary(win)            __m_getpary(win)
+#else
+#define getparx(win)            ((win)?((win)->_parx + 1):ERR)
+#define getpary(win)            ((win)?((win)->_pary + 1):ERR)
+#endif
+#endif
+
 #if !defined(mvwvline) && !HAVE_MVWVLINE
 #define mvwvline(w,y,x,ch,n)    (move(y,x) == ERR ? ERR : wvline(w,ch,n))
 #define mvwhline(w,y,x,ch,n)    (move(y,x) == ERR ? ERR : whline(w,ch,n))
@@ -404,8 +443,13 @@ extern int optind;
 
 #if defined(NCURSES_VERSION) && HAVE_NC_ALLOC_H
 #include <nc_alloc.h>
+#if HAVE_NC_FREEALL && defined(USE_TINFO)
+#undef ExitProgram
+#define ExitProgram(code) _nc_free_tinfo(code)
+#endif
 #else
 #define typeMalloc(type,n) (type *) malloc((n) * sizeof(type))
+#define typeCalloc(type,elts) (type *) calloc((elts), sizeof(type))
 #define typeRealloc(type,n,p) (type *) realloc(p, (n) * sizeof(type))
 #endif
 
@@ -450,5 +494,84 @@ extern int optind;
 		    if (nsig != SIGKILL) \
 			signal(nsig, handler); \
 	    }
+
+/*
+ * Workaround for clean(er) compile with Solaris's legacy curses.
+ * The same would be needed for HPUX 10.20
+ */
+#ifndef TPUTS_ARG
+#if defined(sun) && !defined(_XOPEN_CURSES) && !defined(NCURSES_VERSION_PATCH)
+#define TPUTS_ARG char
+extern char *tgoto(char *, int, int);	/* available, but not prototyped */
+#else
+#define TPUTS_ARG int
+#endif
+#endif
+
+/*
+ * Workarounds for Solaris's X/Open curses
+ */
+#if defined(sun) && defined(_XOPEN_CURSES) && !defined(NCURSES_VERSION_PATCH)
+#if !defined(KEY_MIN) && defined(__KEY_MIN)
+#define KEY_MIN __KEY_MIN
+#endif
+#if !defined(KEY_MAX) && defined(__KEY_MIN)
+#define KEY_MAX __KEY_MAX
+#endif
+#endif
+
+/*
+ * ncurses uses const in some places where X/Open does (or did) not allow.
+ */
+#ifdef NCURSES_VERSION
+#define CONST_MENUS const
+#else
+#define CONST_MENUS /* nothing */
+#endif
+
+#ifndef HAVE_USE_WINDOW
+#if !defined(NCURSES_VERSION_PATCH) || (NCURSES_VERSION_PATCH < 20070915) || !NCURSES_EXT_FUNCS
+#define HAVE_USE_WINDOW 0
+#else
+#define HAVE_USE_WINDOW 1
+#endif
+#endif
+
+/*
+ * Simplify setting up demo of threading with these macros.
+ */
+
+#if !HAVE_USE_WINDOW
+typedef int (*NCURSES_WINDOW_CB)(WINDOW *, void *);
+typedef int (*NCURSES_SCREEN_CB)(SCREEN *, void *);
+#endif
+
+#if HAVE_USE_WINDOW
+#define USING_WINDOW(w,func) use_window(w, (NCURSES_WINDOW_CB) func, w)
+#define USING_WINDOW2(w,func,data) use_window(w, (NCURSES_WINDOW_CB) func, data)
+#define WANT_USE_WINDOW() extern void _nc_want_use_window(void)
+#else
+#define USING_WINDOW(w,func) func(w)
+#define USING_WINDOW2(w,func,data) func(w,data)
+#define WANT_USE_WINDOW() extern void _nc_want_use_window(void)
+#endif
+
+#if HAVE_USE_WINDOW
+#define USING_SCREEN(s,func,data) use_screen(s, (NCURSES_SCREEN_CB) func, data)
+#define WANT_USE_SCREEN() extern void _nc_want_use_screen(void)
+#else
+#define USING_SCREEN(s,func,data) func(s,data)
+#define WANT_USE_SCREEN() extern void _nc_want_use_screen(void)
+#endif
+
+#ifdef TRACE
+#define Trace(p) _tracef p
+#define USE_TRACE 1
+#else
+#define Trace(p)		/* nothing */
+#define USE_TRACE 0
+#endif
+
+#define init_mb(state)	memset(&state, 0, sizeof(state))
 
 #endif /* __TEST_PRIV_H */

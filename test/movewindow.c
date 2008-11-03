@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2006 Free Software Foundation, Inc.                        *
+ * Copyright (c) 2006-2007,2008 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -26,7 +26,7 @@
  * authorization.                                                           *
  ****************************************************************************/
 /*
- * $Id: movewindow.c,v 1.19 2006/06/17 17:43:22 tom Exp $
+ * $Id: movewindow.c,v 1.22 2008/04/12 22:01:41 tom Exp $
  *
  * Demonstrate move functions for windows and derived windows from the curses
  * library.
@@ -47,6 +47,12 @@ mvwin
 #undef derwin
 #endif
 
+#ifdef NCURSES_VERSION
+#define CONST_FMT const
+#else
+#define CONST_FMT		/* nothing */
+#endif
+
 #undef LINE_MAX
 
 #define LINE_MIN	2
@@ -63,14 +69,14 @@ typedef struct {
     WINDOW *child;		/* the actual value */
 } FRAME;
 
-static void head_line(char *fmt,...) GCC_PRINTFLIKE(1, 2);
-static void tail_line(char *fmt,...) GCC_PRINTFLIKE(1, 2);
+static void head_line(CONST_FMT char *fmt,...) GCC_PRINTFLIKE(1, 2);
+static void tail_line(CONST_FMT char *fmt,...) GCC_PRINTFLIKE(1, 2);
 
 static unsigned num_windows;
 static FRAME *all_windows;
 
 static void
-message(int lineno, char *fmt, va_list argp)
+message(int lineno, CONST_FMT char *fmt, va_list argp)
 {
     int y, x;
 
@@ -93,7 +99,7 @@ message(int lineno, char *fmt, va_list argp)
 }
 
 static void
-head_line(char *fmt,...)
+head_line(CONST_FMT char *fmt,...)
 {
     va_list argp;
 
@@ -103,7 +109,7 @@ head_line(char *fmt,...)
 }
 
 static void
-tail_line(char *fmt,...)
+tail_line(CONST_FMT char *fmt,...)
 {
     va_list argp;
 
@@ -245,7 +251,7 @@ add_window(WINDOW *parent, WINDOW *child)
 
     keypad(child, TRUE);
     if (need > have) {
-	all_windows = (FRAME *) realloc(all_windows, need * sizeof(FRAME));
+	all_windows = typeRealloc(FRAME, need, all_windows);
     }
     all_windows[num_windows].parent = parent;
     all_windows[num_windows].child = child;
@@ -511,7 +517,7 @@ show_help(WINDOW *current)
     /* *INDENT-OFF* */
     static struct {
 	int	key;
-	char *	msg;
+	CONST_FMT char * msg;
     } help[] = {
 	{ '?',		"Show this screen" },
 	{ 'b',		"Draw a box inside the current window" },

@@ -1,6 +1,6 @@
-# $Id: programs,v 1.5 2006/11/04 18:56:49 tom Exp $
+# $Id: programs,v 1.14 2008/08/16 21:47:39 tom Exp $
 ##############################################################################
-# Copyright (c) 2006 Free Software Foundation, Inc.                          #
+# Copyright (c) 2006-2007,2008 Free Software Foundation, Inc.                #
 #                                                                            #
 # Permission is hereby granted, free of charge, to any person obtaining a    #
 # copy of this software and associated documentation files (the "Software"), #
@@ -43,8 +43,9 @@ demo_keyok	$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	demo_keyok
 demo_menus	$(LDFLAGS_DEFAULT)	$(LOCAL_LIBS)	demo_menus
 demo_panels	$(LDFLAGS_DEFAULT)	$(LOCAL_LIBS)	demo_panels
 demo_termcap	$(LDFLAGS_TINFO)	$(LOCAL_LIBS)	demo_termcap
-ditto		$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	ditto
+ditto		$(LDFLAGS_THREADS)	$(LOCAL_LIBS)	ditto
 dots		$(LDFLAGS_TINFO)	$(LOCAL_LIBS)	dots
+dots_mvcur	$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	dots_mvcur
 echochar	$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	echochar
 filter		$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	filter
 firework	$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	firework
@@ -53,8 +54,11 @@ foldkeys	$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	foldkeys
 gdc		$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	gdc
 hanoi		$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	hanoi
 hashtest	$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	hashtest
+inch_wide	$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	inch_wide
+inchs		$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	inchs
 ins_wide	$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	ins_wide
 inserts		$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	inserts
+key_names	$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	key_names
 keynames	$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	keynames
 knight		$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	knight
 lrtest		$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	lrtest
@@ -62,13 +66,21 @@ movewindow	$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	movewindow
 ncurses		$(LDFLAGS_DEFAULT)	$(LOCAL_LIBS)	ncurses
 newdemo		$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	newdemo
 railroad	$(LDFLAGS_TINFO)	$(LOCAL_LIBS)	railroad
-rain		$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	rain
+rain		$(LDFLAGS_THREADS)	$(LOCAL_LIBS)	rain
 redraw		$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	redraw
 savescreen	$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	savescreen
 tclock		$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	tclock
+test_arrays	$(LDFLAGS_TINFO)	$(LOCAL_LIBS)	test_arrays
+test_get_wstr	$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	test_get_wstr
+test_getstr	$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	test_getstr
+test_instr	$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	test_instr
+test_inwstr	$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	test_inwstr
+test_opaque	$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	test_opaque
 testaddch	$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	testaddch
 testcurs	$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	testcurs
 testscanw	$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	testscanw
 view		$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	view
-worm		$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	worm
+worm		$(LDFLAGS_THREADS)	$(LOCAL_LIBS)	worm
 xmas		$(LDFLAGS_CURSES)	$(LOCAL_LIBS)	xmas
+
+# vile:makemode
