@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 1998,2007,2008 Free Software Foundation, Inc.              *
+ * Copyright (c) 1998,2009,2010 Free Software Foundation, Inc.              *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -32,7 +32,7 @@
 
 /*
     Version Control
-    $Id: gen.c,v 1.49 2008/10/04 21:59:37 tom Exp $
+    $Id: gen.c,v 1.54 2010/09/04 21:19:50 tom Exp $
   --------------------------------------------------------------------------*/
 /*
   This program generates various record structures and constants from the
@@ -41,7 +41,12 @@
   to produce the real source.
   */
 
+#ifdef HAVE_CONFIG_H
 #include <ncurses_cfg.h>
+#else
+#include <ncurses.h>
+#define HAVE_USE_DEFAULT_COLORS 1
+#endif
 
 #include <stdlib.h>
 #include <stddef.h>
@@ -52,6 +57,7 @@
 #include <menu.h>
 #include <form.h>
 
+#define UChar(c)	((unsigned char)(c))
 #define RES_NAME "Reserved"
 
 static const char *model = "";
@@ -71,7 +77,7 @@ find_pos(char *s, unsigned len, int *low, int *high)
   int l = 0;
 
   *high = -1;
-  *low = 8 * len;
+  *low = (int)(8 * len);
 
   for (i = 0; i < len; i++, s++)
     {
@@ -90,9 +96,13 @@ find_pos(char *s, unsigned len, int *low, int *high)
 		}
 	      l++;
 	      if (little_endian)
-		*s >>= 1;
+		{
+		  *s >>= 1;
+		}
 	      else
-		*s <<= 1;
+		{
+		  *s = (char)(*s << 1);
+		}
 	    }
 	}
       else
@@ -108,11 +118,11 @@ find_pos(char *s, unsigned len, int *low, int *high)
  * bit size, i.e. they fit into an (u)int or a (u)short.
  */
 static void
-  gen_reps
-  (const name_attribute_pair * nap,	/* array of name_attribute_pair records */
-   const char *name,		/* name of the represented record type  */
-   int len,			/* size of the record in bytes          */
-   int bias)
+gen_reps(
+	  const name_attribute_pair * nap,	/* array of name_attribute_pair records */
+	  const char *name,	/* name of the represented record type  */
+	  int len,		/* size of the record in bytes          */
+	  int bias)
 {
   int i, n, l, cnt = 0, low, high;
   int width = strlen(RES_NAME) + 3;
@@ -124,7 +134,7 @@ static void
   for (i = 0; nap[i].name != (char *)0; i++)
     {
       cnt++;
-      l = strlen(nap[i].name);
+      l = (int)strlen(nap[i].name);
       if (l > width)
 	width = l;
     }
@@ -162,7 +172,7 @@ static void
 static void
 chtype_rep(const char *name, attr_t mask)
 {
-  attr_t x = -1;
+  attr_t x = (attr_t)-1;
   attr_t t = x & mask;
   int low, high;
   int l = find_pos((char *)&t, sizeof(t), &low, &high);
@@ -219,7 +229,7 @@ gen_mrep_rep(const char *name)
   mrep_rep("Z", &x);
 
   memset(&x, 0, sizeof(x));
-  x.bstate = -1;
+  x.bstate = (mmask_t) - 1;
   mrep_rep("Bstate", &x);
 
   printf("      end record;\n");
@@ -285,11 +295,12 @@ gen_attr_set(const char *name)
   chtype attr = A_ATTRIBUTES & ~A_COLOR;
   int start = -1;
   int len = 0;
-  int i, set;
+  int i;
+  chtype set;
   for (i = 0; i < (int)(8 * sizeof(chtype)); i++)
 
     {
-      set = attr & 1;
+      set = (attr & 1);
       if (set)
 	{
 	  if (start < 0)
@@ -435,13 +446,14 @@ keydef(const char *name, const char *old_name, int value, int mode)
   if (mode == 0)		/* Generate the new name */
     printf("   %-30s : constant Special_Key_Code := 8#%3o#;\n", name, value);
   else
-    {				/* generate the old name, but only if it doesn't conflict with the old
-				 * name (Ada95 isn't case sensitive!)
-				 */
+    {
       const char *s = old_name;
       const char *t = name;
 
-      while (*s && *t && (toupper(*s++) == toupper(*t++)));
+      /* generate the old name, but only if it doesn't conflict with the old
+       * name (Ada95 isn't case sensitive!)
+       */
+      while (*s && *t && (toupper(UChar(*s++)) == toupper(UChar(*t++))));
       if (*s || *t)
 	printf("   %-16s : Special_Key_Code renames %s;\n", old_name, name);
     }
@@ -761,7 +773,7 @@ acs_def(const char *name, chtype *a)
   int c = a - &acs_map[0];
 
   printf("   %-24s : constant Character := ", name);
-  if (isprint(c) && (c != '`'))
+  if (isprint(UChar(c)) && (c != '`'))
     printf("'%c';\n", c);
   else
     printf("Character'Val (%d);\n", c);
@@ -778,7 +790,9 @@ gen_acs(void)
 #if USE_REENTRANT || BROKEN_LINKER
   printf("   type C_ACS_Ptr is access C_ACS_Map;\n");
   printf("   function ACS_Map return C_ACS_Ptr;\n");
-  printf("   pragma Import (C, ACS_Map, \"_nc_acs_map\");\n");
+  printf("   pragma Import (C, ACS_Map, \""
+	 NCURSES_WRAP_PREFIX
+	 "acs_map\");\n");
 #else
   printf("   ACS_Map : C_ACS_Map;\n");
   printf("   pragma Import (C, ACS_Map, \"acs_map\");\n");
@@ -1034,7 +1048,7 @@ wrap_one_var(const char *c_var,
   printf("   function %s return %s\n", ada_func, ada_type);
   printf("   is\n");
   printf("      function Result return %s;\n", c_type);
-  printf("      pragma Import (C, Result, \"_nc_%s\");\n", c_var);
+  printf("      pragma Import (C, Result, \"" NCURSES_WRAP_PREFIX "%s\");\n", c_var);
   printf("   begin\n");
   if (strcmp(c_type, ada_type))
     printf("      return %s (Result);\n", ada_type);
@@ -1241,7 +1255,7 @@ eti_gen(char *buf, int code, const char *name, int *etimin, int *etimax)
     *etimin = code;
   if (code > *etimax)
     *etimax = code;
-  return strlen(buf);
+  return (int)strlen(buf);
 }
 
 static void
@@ -1483,7 +1497,7 @@ main(int argc, char *argv[])
 	      }
 	    printf("   subtype Eti_Error is C_Int range %d .. %d;\n\n",
 		   etimin, etimax);
-	    printf(buf);
+	    printf("%s", buf);
 	  }
 	  break;
 	default:
